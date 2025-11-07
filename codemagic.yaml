@@ -23,10 +23,23 @@ workflows:
           ls -la ios/ || echo "iOS folder contents:"
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install
+          if [ -d "ios" ]; then
+            cd ios && pod install
+          else
+            echo "iOS directory not found. Checking project structure..."
+            ls -la
+            echo "This might not be a React Native project or iOS platform needs to be added manually."
+            echo "Skipping CocoaPods installation for now."
+          fi
       - name: Build for iOS Simulator
         script: |
-          npx react-native build-ios --mode Debug --simulator
+          if [ -d "ios" ]; then
+            npx react-native build-ios --mode Debug --simulator
+          else
+            echo "No iOS directory found. Cannot build iOS app."
+            echo "Please ensure this is a React Native project with iOS platform."
+            exit 1
+          fi
     artifacts:
       - ios/build/Build/Products/Debug-iphonesimulator/*.app
       - /tmp/xcodebuild_logs/*.log
