@@ -6,7 +6,7 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.yourcompany.airport"
-      node: 18.17.0
+      node: 20.19.4
     scripts:
       - name: Clean and install dependencies
         script: |
@@ -15,21 +15,16 @@ workflows:
       - name: Initialize React Native project
         script: |
           if [ ! -d "ios" ]; then
-            npx @react-native-community/cli@latest init Airport --skip-install --directory .
-            rm -rf Airport
+            echo "Creating new React Native project to get native folders..."
+            npx react-native@latest init TempProject --version 0.72.6
+            mv TempProject/ios ./
+            mv TempProject/android ./
+            rm -rf TempProject
+            echo "Native folders created successfully"
           fi
       - name: Install iOS dependencies
         script: |
-          if [ -d "ios" ]; then
-            cd ios && pod install
-          else
-            echo "iOS directory still not found. Trying alternative approach..."
-            npx react-native init TempProject --skip-install
-            cp -r TempProject/ios ./
-            cp -r TempProject/android ./
-            rm -rf TempProject
-            cd ios && pod install
-          fi
+          cd ios && pod install
       - name: Build for iOS Simulator
         script: |
           npx react-native build-ios --mode Debug --simulator
