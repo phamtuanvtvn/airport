@@ -20,7 +20,16 @@ workflows:
           fi
       - name: Install iOS dependencies
         script: |
-          cd ios && pod install
+          if [ -d "ios" ]; then
+            cd ios && pod install
+          else
+            echo "iOS directory still not found. Trying alternative approach..."
+            npx react-native init TempProject --skip-install
+            cp -r TempProject/ios ./
+            cp -r TempProject/android ./
+            rm -rf TempProject
+            cd ios && pod install
+          fi
       - name: Build for iOS Simulator
         script: |
           npx react-native build-ios --mode Debug --simulator
