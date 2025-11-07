@@ -17,14 +17,37 @@ workflows:
           if [ ! -d "ios" ]; then
             echo "Creating new React Native project to get native folders..."
             npx react-native@latest init TempProject --version 0.72.6
-            mv TempProject/ios ./
-            mv TempProject/android ./
+            
+            echo "Checking if TempProject was created..."
+            ls -la TempProject/ || echo "TempProject directory not found"
+            
+            if [ -d "TempProject/ios" ]; then
+              mv TempProject/ios ./
+              echo "iOS folder moved successfully"
+            else
+              echo "TempProject/ios not found, trying alternative approach..."
+              mkdir -p ios
+            fi
+            
+            if [ -d "TempProject/android" ]; then
+              mv TempProject/android ./
+              echo "Android folder moved successfully"
+            fi
+            
             rm -rf TempProject
-            echo "Native folders created successfully"
+            echo "Current directory contents:"
+            ls -la
           fi
       - name: Install iOS dependencies
         script: |
-          cd ios && pod install
+          if [ -d "ios" ]; then
+            cd ios && pod install
+          else
+            echo "iOS directory still not found. Cannot proceed with CocoaPods installation."
+            echo "Current directory structure:"
+            find . -maxdepth 2 -type d
+            exit 1
+          fi
       - name: Build for iOS Simulator
         script: |
           npx react-native build-ios --mode Debug --simulator
