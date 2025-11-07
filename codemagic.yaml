@@ -38,14 +38,45 @@ workflows:
             echo "Current directory contents:"
             ls -la
           fi
+          
+          # Ensure Podfile exists
+          if [ ! -f "ios/Podfile" ]; then
+            echo "Creating Podfile..."
+            cd ios
+            pod init
+            cat > Podfile << 'EOF'
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+platform :ios, '11.0'
+install! 'cocoapods', :deterministic_uuids => false
+
+target 'Airport' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => false,
+    :fabric_enabled => false,
+    :flipper_configuration => FlipperConfiguration.enabled,
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  post_install do |installer|
+    react_native_post_install(installer)
+  end
+end
+EOF
+            cd ..
+          fi
       - name: Install iOS dependencies
         script: |
-          if [ -d "ios" ]; then
+          if [ -d "ios" ] && [ -f "ios/Podfile" ]; then
             cd ios && pod install
           else
-            echo "iOS directory still not found. Cannot proceed with CocoaPods installation."
-            echo "Current directory structure:"
-            find . -maxdepth 2 -type d
+            echo "iOS directory or Podfile not found."
+            echo "iOS directory exists: $([ -d "ios" ] && echo "YES" || echo "NO")"
+            echo "Podfile exists: $([ -f "ios/Podfile" ] && echo "YES" || echo "NO")"
             exit 1
           fi
       - name: Build for iOS Simulator
