@@ -12,17 +12,25 @@
 2. Connect your GitHub/GitLab/Bitbucket repository
 3. Grant necessary permissions for repository access
 
-## Step 3: Configure iOS Code Signing
+## Step 3: Configure iOS Code Signing (Updated)
 
-### Option A: Automatic (Recommended)
-1. In Codemagic dashboard → Teams → Integrations
-2. Add App Store Connect integration
-3. Provide App Store Connect API key credentials
+### Option A: Development Build (No App Store needed)
+1. In Codemagic dashboard → App Settings → iOS code signing
+2. Select "Automatic" code signing
+3. Or use development certificates instead of distribution
 
-### Option B: Manual Certificates
-1. Create iOS Distribution Certificate in Apple Developer Portal
-2. Create App Store Provisioning Profile
-3. Upload both to Codemagic → Teams → Code signing identities
+### Option B: Simulator Build (Recommended - No signing required)
+1. Build targets iOS Simulator automatically
+2. No certificates or profiles needed
+3. Perfect for testing with Appetize.io
+4. No Apple Developer account required
+
+## Alternative: Use Personal Team ID
+
+If you have a free Apple Developer account:
+1. Use your personal Team ID in Xcode project
+2. Set distribution type to `development`
+3. Bundle ID format: `com.yourname.airport`
 
 ## Step 4: Set up Appetize.io
 
@@ -39,6 +47,8 @@ APPETIZE_API_TOKEN=your_appetize_api_token_here
 BUNDLE_ID=com.yourcompany.airport
 ```
 
+Note: No signing certificates needed for simulator builds!
+
 ## Step 6: Trigger Build
 
 1. Push changes to your repository
@@ -54,10 +64,9 @@ BUNDLE_ID=com.yourcompany.airport
 
 ## Troubleshooting
 
-- **Build fails**: Check Xcode project settings and signing configuration
-- **No artifacts**: Ensure build script produces .ipa file
-- **Appetize upload fails**: Verify API token and file permissions
-- **Simulator issues**: Try different device types in Appetize config
+- **Build fails**: Check Xcode project settings (no signing issues with simulator)
+- **Simulator build**: Look for .app file instead of .ipa in artifacts
+- **Appetize compatibility**: Simulator builds work perfectly with Appetize.io
 
 ## Manual Upload to Appetize.io (Alternative)
 
