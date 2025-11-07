@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Workflow (Expo)
     max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
@@ -11,48 +11,33 @@ workflows:
       - name: Install npm dependencies
         script: |
           npm install
-      - name: Setup React Native iOS
+      - name: Install Expo CLI
         script: |
-          # Generate iOS files if they don't exist
-          if [ ! -d "ios" ]; then
-            echo "Generating iOS platform for React Native..."
-            npx @react-native-community/cli@latest init-ios --skip-install
+          npm install -g @expo/cli
+      - name: Eject Expo project to bare React Native
+        script: |
+          # Create app.json if it doesn't exist
+          if [ ! -f "app.json" ]; then
+            echo '{
+              "expo": {
+                "name": "Airport App",
+                "slug": "airport-app",
+                "version": "1.0.0",
+                "platforms": ["ios", "android"],
+                "ios": {
+                  "bundleIdentifier": "com.yourcompany.airport"
+                }
+              }
+            }' > app.json
           fi
           
-          # Ensure we have the right structure
-          ls -la ios/ || echo "iOS folder contents:"
+          # Prebuild to generate native iOS code
+          npx expo prebuild --platform ios --clear
       - name: Install CocoaPods dependencies
         script: |
-          if [ -d "ios" ]; then
-            cd ios && pod install
-          else
-            echo "iOS directory not found. Checking project structure..."
-            ls -la
-            echo "This might not be a React Native project or iOS platform needs to be added manually."
-            echo "Skipping CocoaPods installation for now."
-          fi
+          cd ios && pod install
       - name: Build for iOS Simulator
         script: |
-          if [ ! -d "ios" ]; then
-            echo "iOS directory not found. Creating iOS platform..."
-            # For React Native 0.60+
-            npx react-native init-ios || echo "init-ios failed, trying alternative..."
-            # Alternative method
-            if [ ! -d "ios" ]; then
-              echo "Trying to run react-native run-ios --simulator to generate iOS files..."
-              npx react-native run-ios --simulator="iPhone 14" --mode Debug || echo "Run-ios failed, continuing..."
-            fi
-            # Last resort - check if we can find any iOS project files
-            if [ ! -d "ios" ]; then
-              echo "Cannot generate iOS platform. Project structure:"
-              find . -name "*.xcodeproj" -o -name "*.xcworkspace" -o -name "package.json" | head -10
-              echo "Package.json content:"
-              cat package.json | grep -E "(react-native|expo|ionic|flutter)" || echo "No mobile framework detected"
-              exit 1
-            fi
-          fi
-          
-          echo "Building iOS simulator app..."
           cd ios
           xcodebuild -workspace *.xcworkspace -scheme * -sdk iphonesimulator -configuration Debug -derivedDataPath build/ build
     artifacts:
