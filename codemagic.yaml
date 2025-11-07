@@ -33,13 +33,28 @@ workflows:
           fi
       - name: Build for iOS Simulator
         script: |
-          if [ -d "ios" ]; then
-            npx react-native build-ios --mode Debug --simulator
-          else
-            echo "No iOS directory found. Cannot build iOS app."
-            echo "Please ensure this is a React Native project with iOS platform."
-            exit 1
+          if [ ! -d "ios" ]; then
+            echo "iOS directory not found. Creating iOS platform..."
+            # For React Native 0.60+
+            npx react-native init-ios || echo "init-ios failed, trying alternative..."
+            # Alternative method
+            if [ ! -d "ios" ]; then
+              echo "Trying to run react-native run-ios --simulator to generate iOS files..."
+              npx react-native run-ios --simulator="iPhone 14" --mode Debug || echo "Run-ios failed, continuing..."
+            fi
+            # Last resort - check if we can find any iOS project files
+            if [ ! -d "ios" ]; then
+              echo "Cannot generate iOS platform. Project structure:"
+              find . -name "*.xcodeproj" -o -name "*.xcworkspace" -o -name "package.json" | head -10
+              echo "Package.json content:"
+              cat package.json | grep -E "(react-native|expo|ionic|flutter)" || echo "No mobile framework detected"
+              exit 1
+            fi
           fi
+          
+          echo "Building iOS simulator app..."
+          cd ios
+          xcodebuild -workspace *.xcworkspace -scheme * -sdk iphonesimulator -configuration Debug -derivedDataPath build/ build
     artifacts:
       - ios/build/Build/Products/Debug-iphonesimulator/*.app
       - /tmp/xcodebuild_logs/*.log
