@@ -14,41 +14,54 @@ workflows:
           npm install
       - name: Initialize React Native project
         script: |
+          echo "Checking current directory structure:"
+          ls -la
+          
           if [ ! -d "ios" ]; then
-            echo "Creating new React Native project to get native folders..."
-            npx react-native@latest init TempProject --version 0.72.6
+            echo "iOS directory not found. Creating React Native project..."
             
-            if [ -d "TempProject/ios" ]; then
-              mv TempProject/ios ./
+            # Create in a different location to avoid conflicts
+            cd /tmp
+            npx react-native@latest init TempAirport --version 0.72.6
+            
+            echo "TempAirport project created. Contents:"
+            ls -la TempAirport/
+            
+            if [ -d "TempAirport/ios" ]; then
+              echo "Moving iOS folder to project directory..."
+              mv TempAirport/ios $GITHUB_WORKSPACE/
               echo "iOS folder moved successfully"
             fi
             
-            if [ -d "TempProject/android" ]; then
-              mv TempProject/android ./
-              echo "Android folder moved successfully"  
+            if [ -d "TempAirport/android" ]; then
+              echo "Moving Android folder to project directory..."
+              mv TempAirport/android $GITHUB_WORKSPACE/
+              echo "Android folder moved successfully"
             fi
             
-            rm -rf TempProject
+            # Clean up
+            rm -rf TempAirport
+            cd $GITHUB_WORKSPACE
           fi
           
-          if [ ! -f "ios/Podfile" ]; then
-            echo "Creating Podfile..."
-            cd ios
-            echo "require_relative '../node_modules/react-native/scripts/react_native_pods'" > Podfile
-            echo "require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'" >> Podfile
-            echo "" >> Podfile
-            echo "platform :ios, '11.0'" >> Podfile
-            echo "install! 'cocoapods', :deterministic_uuids => false" >> Podfile
-            echo "" >> Podfile
-            echo "target 'Airport' do" >> Podfile
-            echo "  config = use_native_modules!" >> Podfile
-            echo "  use_react_native!(:path => config[:reactNativePath])" >> Podfile
-            echo "end" >> Podfile
-            cd ..
+          echo "Final directory structure:"
+          ls -la
+          
+          if [ -d "ios" ]; then
+            echo "iOS directory contents:"
+            ls -la ios/
+          else
+            echo "ERROR: iOS directory still not found!"
+            exit 1
           fi
       - name: Install iOS dependencies
         script: |
-          cd ios && pod install
+          if [ -d "ios" ]; then
+            cd ios && pod install
+          else
+            echo "iOS directory not found, cannot install dependencies"
+            exit 1
+          fi
       - name: Build for iOS Simulator
         script: |
           npx react-native build-ios --mode Debug --simulator
