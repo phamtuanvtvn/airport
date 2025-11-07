@@ -1,0 +1,36 @@
+workflows:
+  ios-workflow:
+    name: React Native iOS Workflow
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        BUNDLE_ID: "com.yourcompany.airport"
+      node: 18.17.0
+    scripts:
+      - name: Clean and install dependencies
+        script: |
+          rm -rf node_modules package-lock.json
+          npm install
+      - name: Initialize React Native project
+        script: |
+          if [ ! -d "ios" ]; then
+            npx @react-native-community/cli@latest init Airport --skip-install --directory .
+            rm -rf Airport
+          fi
+      - name: Install iOS dependencies
+        script: |
+          cd ios && pod install
+      - name: Build for iOS Simulator
+        script: |
+          npx react-native build-ios --mode Debug --simulator
+    artifacts:
+      - ios/build/Build/Products/Debug-iphonesimulator/*.app
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: false
