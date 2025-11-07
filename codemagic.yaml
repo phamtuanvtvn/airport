@@ -1,0 +1,53 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic_api_key
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.yourcompany.airport
+      vars:
+        XCODE_WORKSPACE: "Airport.xcworkspace"
+        XCODE_SCHEME: "Airport"
+        BUNDLE_ID: "com.yourcompany.airport"
+      node: 18.17.0
+    scripts:
+      - name: Set up keychain to be used for codesigning
+        script: |
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+      - name: Use system default keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Install npm dependencies
+        script: |
+          npm ci
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: false
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
